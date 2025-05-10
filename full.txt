@@ -1,0 +1,1121 @@
+/**
+ * Kelas model untuk menyimpan data anggaran
+ */
+public class Budget {
+    private int categoryId;
+    private double amount;
+    private String period;
+
+    public Budget(int categoryId, double amount, String period) {
+        this.categoryId = categoryId;
+        this.amount = amount;
+        this.period = period;
+    }
+
+    // Getters
+    public int getCategoryId() {
+        return categoryId;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public String getPeriod() {
+        return period;
+    }
+}
+
+import java.util.HashMap;
+
+/**
+ * Implementasi manajemen anggaran
+ * REQUIRED: ICategoryMgt (categoryExists, getCategoryById)
+ * REQUIRED: ITransactionMgt (getAllTransactions)
+ */
+public class BudgetManager implements IBudgetMgt {
+    private HashMap<Integer, Budget> budgets;
+    private ICategoryMgt categoryManager; // REQUIRED INTERFACE
+    private ITransactionMgt transactionManager; // REQUIRED INTERFACE
+
+    public BudgetManager() {
+        this.budgets = new HashMap<>();
+        this.categoryManager = null;
+        this.transactionManager = null;
+    }
+
+    /**
+     * Metode untuk koneksi ke komponen CategoryManager
+     *
+     * @param categoryManager komponen kategori manager
+     */
+    public void connectToCategoryManager(ICategoryMgt categoryManager) {
+        this.categoryManager = categoryManager;
+    }
+
+    /**
+     * Metode untuk koneksi ke komponen TransactionManager
+     *
+     * @param transactionManager komponen transaksi manager
+     */
+    public void connectToTransactionManager(ITransactionMgt transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+
+    @Override
+    public boolean setBudget(int categoryId, double amount, String period) {
+        if (amount <= 0 || period == null || categoryManager == null ||
+                !categoryManager.categoryExists(categoryId)) {
+            return false;
+        }
+
+        Budget budget = new Budget(categoryId, amount, period);
+        budgets.put(categoryId, budget);
+        return true;
+    }
+
+    @Override
+    public double getBudgetForCategory(int categoryId) {
+        if (categoryManager == null || !categoryManager.categoryExists(categoryId)) {
+            return 0;
+        }
+
+        Budget budget = budgets.get(categoryId);
+        return (budget != null) ? budget.getAmount() : 0;
+    }
+
+    @Override
+    public double getBudgetUsagePercentage(int categoryId) {
+        if (categoryManager == null || !categoryManager.categoryExists(categoryId) ||
+                transactionManager == null) {
+            return 0;
+        }
+
+        double budget = getBudgetForCategory(categoryId);
+        if (budget <= 0) {
+            return 0;
+        }
+
+        Category category = categoryManager.getCategoryById(categoryId);
+        if (category == null || !category.getType().equals("EXPENSE")) {
+            return 0;
+        }
+
+        // Hitung total pengeluaran untuk kategori ini
+        double categoryExpense = 0;
+        for (Transaction t : transactionManager.getAllTransactions()) {
+            if (t.getCategoryId() == categoryId && t.getAmount() < 0) {
+                categoryExpense += Math.abs(t.getAmount());
+            }
+        }
+
+        return (categoryExpense / budget) * 100;
+    }
+}
+
+/**
+ * Kelas model untuk menyimpan data kategori
+ */
+public class Category {
+    private int id;
+    private String name;
+    private String type; // "INCOME" atau "EXPENSE"
+
+    public Category(int id, String name, String type) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+    }
+
+    // Getters
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (" + type + ")";
+    }
+}
+
+import java.util.ArrayList;
+
+/**
+ * Implementasi manajemen kategori
+ * REQUIRED: Tidak ada
+ */
+public class CategoryManager implements ICategoryMgt {
+    private ArrayList<Category> categories;
+    private int nextId;
+
+    public CategoryManager() {
+        this.categories = new ArrayList<>();
+        this.nextId = 1;
+
+        // Inisialisasi dengan beberapa kategori default
+        addCategory("Gaji", "INCOME");
+        addCategory("Bonus", "INCOME");
+        addCategory("Makanan", "EXPENSE");
+        addCategory("Transportasi", "EXPENSE");
+        addCategory("Hiburan", "EXPENSE");
+        addCategory("Belanja", "EXPENSE");
+        addCategory("Pendidikan", "EXPENSE");
+        addCategory("Kesehatan", "EXPENSE");
+    }
+
+    @Override
+    public int addCategory(String name, String type) {
+        if (name == null || name.isEmpty() || type == null ||
+                (!type.equals("INCOME") && !type.equals("EXPENSE"))) {
+            return -1;
+        }
+
+        if (categoryNameExists(name)) {
+            return -1;
+        }
+
+        Category category = new Category(nextId, name, type);
+        categories.add(category);
+        return nextId++;
+    }
+
+    @Override
+    public Category[] getAllCategories() {
+        return categories.toArray(new Category[0]);
+    }
+
+    @Override
+    public boolean categoryExists(int categoryId) {
+        for (Category c : categories) {
+            if (c.getId() == categoryId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public Category getCategoryById(int categoryId) {
+        for (Category c : categories) {
+            if (c.getId() == categoryId) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Memeriksa apakah kategori dengan nama tertentu sudah ada
+     */
+    private boolean categoryNameExists(String name) {
+        for (Category c : categories) {
+            if (c.getName().equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+/**
+ * INTERFACE PROVIDED
+ * Interface provided untuk manajemen anggaran
+ */
+public interface IBudgetMgt {
+    /**
+     * Menetapkan anggaran untuk kategori tertentu
+     *
+     * @param categoryId ID kategori
+     * @param amount     jumlah anggaran
+     * @param period     periode anggaran ("MONTHLY", "WEEKLY", dll)
+     * @return true jika berhasil, false jika gagal
+     *
+     *         pre: amount > 0
+     *         pre: period != null
+     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryMgt
+     *
+     *         post: result => getBudgetForCategory(categoryId) == amount
+     */
+    public boolean setBudget(int categoryId, double amount, String period);
+
+    /**
+     * Mendapatkan anggaran untuk kategori tertentu
+     *
+     * @param categoryId ID kategori
+     * @return jumlah anggaran, 0 jika tidak ada anggaran
+     *
+     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryMgt
+     *
+     *         post: result >= 0
+     */
+    public double getBudgetForCategory(int categoryId);
+
+    /**
+     * Memeriksa persentase penggunaan anggaran
+     *
+     * @param categoryId ID kategori
+     * @return persentase penggunaan (0-100+)
+     *
+     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryMgt
+     *         pre: getBudgetForCategory(categoryId) > 0
+     *
+     *         post: result >= 0
+     */
+    public double getBudgetUsagePercentage(int categoryId);
+}
+
+/**
+ * INTERFACE PROVIDED
+ * Interface provided untuk manajemen kategori
+ */
+public interface ICategoryMgt {
+    /**
+     * Menambahkan kategori baru
+     *
+     * @param name nama kategori
+     * @param type tipe kategori ("INCOME" atau "EXPENSE")
+     * @return ID kategori jika berhasil, -1 jika gagal
+     *
+     *         pre: name != null && name.length() > 0
+     *         pre: type != null && (type.equals("INCOME") ||
+     *         type.equals("EXPENSE"))
+     *         pre: !categoryNameExists(name)
+     *
+     *         post: result > 0 => categoryExists(result)
+     */
+    public int addCategory(String name, String type);
+
+    /**
+     * Mendapatkan semua kategori dalam sistem
+     *
+     * @return array dari semua kategori
+     *
+     *         post: result != null
+     */
+    public Category[] getAllCategories();
+
+    /**
+     * Memeriksa apakah kategori dengan ID tertentu ada
+     *
+     * @param categoryId ID kategori
+     * @return true jika kategori ada, false jika tidak
+     */
+    public boolean categoryExists(int categoryId);
+
+    /**
+     * Mendapatkan informasi kategori berdasarkan ID
+     *
+     * @param categoryId ID kategori
+     * @return objek Category jika ditemukan, null jika tidak
+     *
+     *         pre: categoryExists(categoryId)
+     *
+     *         post: result != null
+     */
+    public Category getCategoryById(int categoryId);
+}
+
+/**
+ * INTERFACE PROVIDED
+ * Interface provided untuk pembuatan laporan
+ */
+public interface IReportGenerator {
+    /**
+     * Membuat laporan pengeluaran berdasarkan kategori
+     *
+     * @param startDate tanggal awal dalam format "yyyy-MM-dd"
+     * @param endDate   tanggal akhir dalam format "yyyy-MM-dd"
+     * @return laporan dalam bentuk string
+     *
+     *         pre: startDate != null && endDate != null
+     *         pre: isValidDate(startDate) && isValidDate(endDate)
+     *         pre: startDate <= endDate (secara kronologis)
+     *
+     *         post: result != null
+     */
+    public String generateExpenseReportByCategory(String startDate, String endDate);
+
+    /**
+     * Membuat laporan pendapatan vs pengeluaran
+     *
+     * @param startDate tanggal awal dalam format "yyyy-MM-dd"
+     * @param endDate   tanggal akhir dalam format "yyyy-MM-dd"
+     * @return laporan dalam bentuk string
+     *
+     *         pre: startDate != null && endDate != null
+     *         pre: isValidDate(startDate) && isValidDate(endDate)
+     *         pre: startDate <= endDate (secara kronologis)
+     *
+     *         post: result != null
+     */
+    public String generateIncomeVsExpenseReport(String startDate, String endDate);
+}
+
+/**
+ * INTERFACE PROVIDED
+ * Interface provided untuk manajemen transaksi keuangan
+ */
+public interface ITransactionMgt {
+    /**
+     * Menambahkan transaksi baru ke sistem
+     * @param description deskripsi transaksi
+     * @param amount jumlah uang (positif untuk pemasukan, negatif untuk pengeluaran)
+     * @param categoryId id kategori transaksi
+     * @param date tanggal transaksi dalam format "yyyy-MM-dd"
+     * @return ID transaksi jika berhasil, -1 jika gagal
+     *
+     * pre: description != null
+     * pre: date != null && isValidDate(date)
+     * pre: categoryExists(categoryId) // REQUIRED dari ICategoryManager
+     *
+     * post: result > 0 => transactionExists(result)
+     */
+    public int addTransaction(String description, double amount, int categoryId, String date);
+
+    /**
+     * Mendapatkan semua transaksi dalam sistem
+     * @return array dari semua transaksi
+     *
+     * post: result != null
+     */
+    public Transaction[] getAllTransactions();
+
+    /**
+     * Mendapatkan transaksi berdasarkan rentang tanggal
+     * @param startDate tanggal awal dalam format "yyyy-MM-dd"
+     * @param endDate tanggal akhir dalam format "yyyy-MM-dd"
+     * @return array dari transaksi yang sesuai dengan rentang tanggal
+     *
+     * pre: startDate != null && endDate != null
+     * pre: isValidDate(startDate) && isValidDate(endDate)
+     * pre: startDate <= endDate (secara kronologis)
+     *
+     * post: result != null
+     */
+    public Transaction[] getTransactionsByDateRange(String startDate, String endDate);
+
+    /**
+     * Mendapatkan total pendapatan (transaksi dengan amount positif)
+     * @return total pendapatan
+     *
+     * post: result >= 0
+     */
+    public double getTotalIncome();
+
+    /**
+     * Mendapatkan total pengeluaran (transaksi dengan amount negatif)
+     * @return total pengeluaran (nilai positif)
+     *
+     * post: result >= 0
+     */
+    public double getTotalExpense();
+}
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Scanner;
+
+/**
+ * Aplikasi utama Personal Finance Tracker
+ */
+public class PersonalFinanceTracker {
+    private ICategoryMgt categoryManager;
+    private ITransactionMgt transactionManager;
+    private IBudgetMgt budgetManager;
+    private IReportGenerator reportGenerator;
+    private Scanner scanner;
+
+    public PersonalFinanceTracker() {
+        // Inisialisasi komponen-komponen
+        this.categoryManager = new CategoryManager();
+        this.transactionManager = new TransactionManager();
+        this.budgetManager = new BudgetManager();
+        this.reportGenerator = new ReportGenerator();
+        this.scanner = new Scanner(System.in);
+
+        // Melakukan koneksi antar komponen
+        ((TransactionManager) transactionManager).connectTo(categoryManager);
+        ((BudgetManager) budgetManager).connectToCategoryManager(categoryManager);
+        ((BudgetManager) budgetManager).connectToTransactionManager(transactionManager);
+        ((ReportGenerator) reportGenerator).connectToCategoryManager(categoryManager);
+        ((ReportGenerator) reportGenerator).connectToTransactionManager(transactionManager);
+    }
+
+    /**
+     * Menampilkan menu utama
+     */
+    public void showMainMenu() {
+        boolean exit = false;
+
+        while (!exit) {
+            System.out.println("\n==== PERSONAL FINANCE TRACKER ====");
+            System.out.println("1. Tambah Transaksi");
+            System.out.println("2. Lihat Semua Transaksi");
+            System.out.println("3. Tambah Kategori");
+            System.out.println("4. Lihat Semua Kategori");
+            System.out.println("5. Tetapkan Anggaran");
+            System.out.println("6. Lihat Penggunaan Anggaran");
+            System.out.println("7. Lihat Laporan Pengeluaran per Kategori");
+            System.out.println("8. Lihat Laporan Pendapatan vs Pengeluaran");
+            System.out.println("0. Keluar");
+            System.out.print("Pilihan Anda: ");
+
+            int choice = -1;
+            try {
+                choice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+            } catch (Exception e) {
+                scanner.nextLine(); // Consume invalid input
+            }
+
+            switch (choice) {
+                case 1:
+                    addTransaction();
+                    break;
+                case 2:
+                    viewAllTransactions();
+                    break;
+                case 3:
+                    addCategory();
+                    break;
+                case 4:
+                    viewAllCategories();
+                    break;
+                case 5:
+                    setBudget();
+                    break;
+                case 6:
+                    viewBudgetUsage();
+                    break;
+                case 7:
+                    generateExpenseReport();
+                    break;
+                case 8:
+                    generateIncomeVsExpenseReport();
+                    break;
+                case 0:
+                    exit = true;
+                    System.out.println("Terima kasih! Sampai jumpa.");
+                    break;
+                default:
+                    System.out.println("Pilihan tidak valid. Silakan coba lagi.");
+            }
+        }
+    }
+
+    /**
+     * Menambahkan transaksi baru
+     */
+    private void addTransaction() {
+        System.out.println("\n==== TAMBAH TRANSAKSI ====");
+
+        // Tampilkan kategori yang tersedia
+        viewAllCategories();
+
+        System.out.print("Deskripsi transaksi: ");
+        String description = scanner.nextLine();
+
+        System.out.print("Jumlah (positif untuk pendapatan, negatif untuk pengeluaran): ");
+        double amount = 0;
+        try {
+            amount = scanner.nextDouble();
+            scanner.nextLine(); // Consume newline
+        } catch (Exception e) {
+            System.out.println("Input tidak valid. Transaksi dibatalkan.");
+            scanner.nextLine(); // Consume invalid input
+            return;
+        }
+
+        System.out.print("ID Kategori: ");
+        int categoryId = 0;
+        try {
+            categoryId = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+        } catch (Exception e) {
+            System.out.println("Input tidak valid. Transaksi dibatalkan.");
+            scanner.nextLine(); // Consume invalid input
+            return;
+        }
+
+        // Gunakan tanggal hari ini sebagai default
+        String date = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        int result = transactionManager.addTransaction(description, amount, categoryId, date);
+
+        if (result > 0) {
+            System.out.println("Transaksi berhasil ditambahkan dengan ID: " + result);
+        } else {
+            System.out.println("Gagal menambahkan transaksi. Pastikan ID kategori valid.");
+        }
+    }
+
+    /**
+     * Menampilkan semua transaksi
+     */
+    private void viewAllTransactions() {
+        System.out.println("\n==== SEMUA TRANSAKSI ====");
+
+        Transaction[] transactions = transactionManager.getAllTransactions();
+
+        if (transactions.length == 0) {
+            System.out.println("Belum ada transaksi.");
+            return;
+        }
+
+        for (Transaction t : transactions) {
+            Category category = categoryManager.getCategoryById(t.getCategoryId());
+            String categoryName = (category != null) ? category.getName() : "Kategori tidak diketahui";
+
+            String amountStr = (t.getAmount() >= 0) ? "+Rp." + String.format("%.0f", t.getAmount())
+                    : "-Rp." + String.format("%.0f", Math.abs(t.getAmount()));
+
+            System.out.println(t.getId() + ". " + t.getDescription() + " (" + categoryName + ") " +
+                    amountStr + " pada " + t.getDate());
+        }
+
+        System.out.println("\nTotal Pendapatan: Rp." + String.format("%.0f", transactionManager.getTotalIncome()));
+        System.out.println("Total Pengeluaran: Rp." + String.format("%.0f", transactionManager.getTotalExpense()));
+    }
+
+    /**
+     * Menambahkan kategori baru
+     */
+    private void addCategory() {
+        System.out.println("\n==== TAMBAH KATEGORI ====");
+
+        System.out.print("Nama kategori: ");
+        String name = scanner.nextLine();
+
+        System.out.println("Tipe kategori:");
+        System.out.println("1. INCOME (Pendapatan)");
+        System.out.println("2. EXPENSE (Pengeluaran)");
+        System.out.print("Pilihan Anda (1/2): ");
+
+        int typeChoice = 0;
+        try {
+            typeChoice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+        } catch (Exception e) {
+            System.out.println("Input tidak valid. Kategori dibatalkan.");
+            scanner.nextLine(); // Consume invalid input
+            return;
+        }
+
+        String type = (typeChoice == 1) ? "INCOME" : "EXPENSE";
+
+        int result = categoryManager.addCategory(name, type);
+
+        if (result > 0) {
+            System.out.println("Kategori berhasil ditambahkan dengan ID: " + result);
+        } else {
+            System.out.println("Gagal menambahkan kategori. Mungkin nama sudah digunakan.");
+        }
+    }
+
+    /**
+     * Menampilkan semua kategori
+     */
+    private void viewAllCategories() {
+        System.out.println("\n==== SEMUA KATEGORI ====");
+
+        Category[] categories = categoryManager.getAllCategories();
+
+        if (categories.length == 0) {
+            System.out.println("Belum ada kategori.");
+            return;
+        }
+
+        System.out.println("ID | Nama Kategori | Tipe");
+        System.out.println("-------------------------");
+        for (Category c : categories) {
+            System.out.println(c.getId() + " | " + c.getName() + " | " + c.getType());
+        }
+    }
+
+    /**
+     * Menetapkan anggaran untuk kategori
+     */
+    private void setBudget() {
+        System.out.println("\n==== TETAPKAN ANGGARAN ====");
+
+        // Tampilkan kategori pengeluaran
+        System.out.println("Kategori Pengeluaran:");
+        Category[] categories = categoryManager.getAllCategories();
+        boolean hasExpenseCategory = false;
+
+        for (Category c : categories) {
+            if (c.getType().equals("EXPENSE")) {
+                System.out.println(c.getId() + ". " + c.getName());
+                hasExpenseCategory = true;
+            }
+        }
+
+        if (!hasExpenseCategory) {
+            System.out.println("Tidak ada kategori pengeluaran.");
+            return;
+        }
+
+        System.out.print("ID Kategori: ");
+        int categoryId = 0;
+        try {
+            categoryId = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+        } catch (Exception e) {
+            System.out.println("Input tidak valid.");
+            scanner.nextLine(); // Consume invalid input
+            return;
+        }
+
+        // Verifikasi kategori
+        Category category = categoryManager.getCategoryById(categoryId);
+        if (category == null || !category.getType().equals("EXPENSE")) {
+            System.out.println("Kategori tidak valid atau bukan kategori pengeluaran.");
+            return;
+        }
+
+        System.out.print("Jumlah anggaran: Rp.");
+        double amount = 0;
+        try {
+            amount = scanner.nextDouble();
+            scanner.nextLine(); // Consume newline
+        } catch (Exception e) {
+            System.out.println("Input tidak valid.");
+            scanner.nextLine(); // Consume invalid input
+            return;
+        }
+
+        // Periode anggaran selalu bulanan untuk kesederhanaan
+        String period = "MONTHLY";
+
+        boolean result = budgetManager.setBudget(categoryId, amount, period);
+
+        if (result) {
+            System.out.println("Anggaran berhasil ditetapkan untuk " + category.getName() + ": Rp." +
+                    String.format("%.0f", amount) + " per bulan.");
+        } else {
+            System.out.println("Gagal menetapkan anggaran.");
+        }
+    }
+
+    /**
+     * Melihat penggunaan anggaran
+     */
+    private void viewBudgetUsage() {
+        System.out.println("\n==== PENGGUNAAN ANGGARAN ====");
+
+        // Tampilkan kategori pengeluaran yang memiliki anggaran
+        Category[] categories = categoryManager.getAllCategories();
+        boolean hasBudget = false;
+
+        System.out.println("Kategori | Anggaran | Penggunaan | Persentase");
+        System.out.println("-------------------------------------------");
+
+        for (Category c : categories) {
+            if (c.getType().equals("EXPENSE")) {
+                double budget = budgetManager.getBudgetForCategory(c.getId());
+                if (budget > 0) {
+                    double usagePercentage = budgetManager.getBudgetUsagePercentage(c.getId());
+                    double usage = (usagePercentage / 100) * budget;
+
+                    System.out.println(c.getName() + " | Rp." + String.format("%.0f", budget) +
+                            " | Rp." + String.format("%.0f", usage) +
+                            " | " + String.format("%.1f", usagePercentage) + "%");
+                    hasBudget = true;
+                }
+            }
+        }
+
+        if (!hasBudget) {
+            System.out.println("Belum ada anggaran yang ditetapkan.");
+        }
+    }
+
+    /**
+     * Membuat laporan pengeluaran per kategori
+     */
+    private void generateExpenseReport() {
+        System.out.println("\n==== LAPORAN PENGELUARAN PER KATEGORI ====");
+
+        String startDate = promptForDate("Tanggal awal (yyyy-MM-dd) atau tekan enter untuk bulan ini: ");
+        String endDate = promptForDate("Tanggal akhir (yyyy-MM-dd) atau tekan enter untuk hari ini: ");
+
+        String report = reportGenerator.generateExpenseReportByCategory(startDate, endDate);
+        System.out.println("\n" + report);
+    }
+
+    /**
+     * Membuat laporan pendapatan vs pengeluaran
+     */
+    private void generateIncomeVsExpenseReport() {
+        System.out.println("\n==== LAPORAN PENDAPATAN VS PENGELUARAN ====");
+
+        String startDate = promptForDate("Tanggal awal (yyyy-MM-dd) atau tekan enter untuk bulan ini: ");
+        String endDate = promptForDate("Tanggal akhir (yyyy-MM-dd) atau tekan enter untuk hari ini: ");
+
+        String report = reportGenerator.generateIncomeVsExpenseReport(startDate, endDate);
+        System.out.println("\n" + report);
+    }
+
+    /**
+     * Meminta input tanggal dengan nilai default
+     */
+    private String promptForDate(String message) {
+        System.out.print(message);
+        String input = scanner.nextLine().trim();
+
+        if (input.isEmpty()) {
+            if (message.contains("awal")) {
+                // Default untuk tanggal awal: awal bulan ini
+                return LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_LOCAL_DATE);
+            } else {
+                // Default untuk tanggal akhir: hari ini
+                return LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+            }
+        }
+
+        // Validasi format tanggal
+        try {
+            LocalDate.parse(input);
+            return input;
+        } catch (Exception e) {
+            System.out.println("Format tanggal tidak valid. Menggunakan tanggal default.");
+            if (message.contains("awal")) {
+                return LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_LOCAL_DATE);
+            } else {
+                return LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+            }
+        }
+    }
+
+    /**
+     * Entry point aplikasi
+     */
+    public static void main(String[] args) {
+        PersonalFinanceTracker app = new PersonalFinanceTracker();
+        app.showMainMenu();
+    }
+}
+
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Implementasi generator laporan
+ * REQUIRED: ITransactionMgt (getTransactionsByDateRange)
+ * REQUIRED: ICategoryMgt (getCategoryById)
+ */
+public class ReportGenerator implements IReportGenerator {
+    private ITransactionMgt transactionManager; // REQUIRED INTERFACE
+    private ICategoryMgt categoryManager; // REQUIRED INTERFACE
+
+    public ReportGenerator() {
+        this.transactionManager = null;
+        this.categoryManager = null;
+    }
+
+    /**
+     * Metode untuk koneksi ke komponen TransactionManager
+     *
+     * @param transactionManager komponen transaksi manager
+     */
+    public void connectToTransactionManager(ITransactionMgt transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+
+    /**
+     * Metode untuk koneksi ke komponen CategoryManager
+     *
+     * @param categoryManager komponen kategori manager
+     */
+    public void connectToCategoryManager(ICategoryMgt categoryManager) {
+        this.categoryManager = categoryManager;
+    }
+
+    @Override
+    public String generateExpenseReportByCategory(String startDate, String endDate) {
+        if (transactionManager == null || categoryManager == null ||
+                startDate == null || endDate == null ||
+                !isValidDate(startDate) || !isValidDate(endDate)) {
+            return "Tidak dapat membuat laporan.";
+        }
+
+        Transaction[] transactions = transactionManager.getTransactionsByDateRange(startDate, endDate);
+
+        // Map untuk menyimpan total pengeluaran per kategori
+        Map<Integer, Double> categoryExpenses = new HashMap<>();
+
+        // Hitung total pengeluaran per kategori
+        for (Transaction t : transactions) {
+            if (t.getAmount() < 0) { // Pengeluaran
+                int categoryId = t.getCategoryId();
+                double expense = Math.abs(t.getAmount());
+
+                categoryExpenses.put(categoryId,
+                        categoryExpenses.getOrDefault(categoryId, 0.0) + expense);
+            }
+        }
+
+        // Buat laporan
+        StringBuilder report = new StringBuilder();
+        report.append("LAPORAN PENGELUARAN PER KATEGORI\n");
+        report.append("Periode: ").append(startDate).append(" sampai ").append(endDate).append("\n\n");
+        report.append("Kategori | Jumlah Pengeluaran\n");
+        report.append("------------------------------\n");
+
+        double totalExpense = 0;
+
+        for (Map.Entry<Integer, Double> entry : categoryExpenses.entrySet()) {
+            int categoryId = entry.getKey();
+            double expense = entry.getValue();
+            Category category = categoryManager.getCategoryById(categoryId);
+
+            if (category != null) {
+                report.append(category.getName())
+                        .append(" | Rp.")
+                        .append(String.format("%.0f", expense))
+                        .append("\n");
+
+                totalExpense += expense;
+            }
+        }
+
+        report.append("------------------------------\n");
+        report.append("TOTAL | Rp.").append(String.format("%.0f", totalExpense)).append("\n");
+
+        return report.toString();
+    }
+
+    @Override
+    public String generateIncomeVsExpenseReport(String startDate, String endDate) {
+        if (transactionManager == null || categoryManager == null ||
+                startDate == null || endDate == null ||
+                !isValidDate(startDate) || !isValidDate(endDate)) {
+            return "Tidak dapat membuat laporan.";
+        }
+
+        Transaction[] transactions = transactionManager.getTransactionsByDateRange(startDate, endDate);
+
+        double totalIncome = 0;
+        double totalExpense = 0;
+
+        // Hitung total pendapatan dan pengeluaran
+        for (Transaction t : transactions) {
+            if (t.getAmount() > 0) { // Pendapatan
+                totalIncome += t.getAmount();
+            } else { // Pengeluaran
+                totalExpense += Math.abs(t.getAmount());
+            }
+        }
+
+        // Buat laporan
+        StringBuilder report = new StringBuilder();
+        report.append("LAPORAN PENDAPATAN VS PENGELUARAN\n");
+        report.append("Periode: ").append(startDate).append(" sampai ").append(endDate).append("\n\n");
+
+        report.append("Total Pendapatan: Rp.").append(String.format("%.0f", totalIncome)).append("\n");
+        report.append("Total Pengeluaran: Rp.").append(String.format("%.0f", totalExpense)).append("\n");
+
+        double balance = totalIncome - totalExpense;
+        report.append("Saldo: Rp.").append(String.format("%.0f", balance)).append("\n");
+
+        report.append("\nStatus: ");
+        if (balance > 0) {
+            report.append("SURPLUS");
+        } else if (balance < 0) {
+            report.append("DEFISIT");
+        } else {
+            report.append("SEIMBANG");
+        }
+
+        return report.toString();
+    }
+
+    /**
+     * Metode helper untuk validasi format tanggal
+     */
+    private boolean isValidDate(String dateStr) {
+        try {
+            LocalDate.parse(dateStr);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+
+/**
+ * Kelas model untuk menyimpan data transaksi
+ */
+public class Transaction {
+    private int id;
+    private String description;
+    private double amount;
+    private int categoryId;
+    private String date;
+
+    public Transaction(int id, String description, double amount, int categoryId, String date) {
+        this.id = id;
+        this.description = description;
+        this.amount = amount;
+        this.categoryId = categoryId;
+        this.date = date;
+    }
+
+    // Getters
+    public int getId() {
+        return id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public int getCategoryId() {
+        return categoryId;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    @Override
+    public String toString() {
+        return "Transaction #" + id + ": " + description + " (Rp." +
+                String.format("%.0f", amount) + ") on " + date;
+    }
+}
+
+import java.util.ArrayList;
+import java.util.List;
+import java.time.LocalDate;
+
+/**
+ * Implementasi manajemen transaksi
+ * REQUIRED: ICategoryManager (categoryExists)
+ */
+public class TransactionManager implements ITransactionMgt {
+    private ArrayList<Transaction> transactions;
+    private ICategoryMgt categoryManager; // REQUIRED INTERFACE
+    private int nextId;
+
+    public TransactionManager() {
+        this.transactions = new ArrayList<>();
+        this.nextId = 1;
+        this.categoryManager = null;
+    }
+
+    /**
+     * Metode untuk koneksi ke komponen CategoryManager
+     *
+     * @param categoryManager komponen kategori manager
+     */
+    public void connectTo(ICategoryMgt categoryManager) {
+        this.categoryManager = categoryManager;
+    }
+
+    @Override
+    public int addTransaction(String description, double amount, int categoryId, String date) {
+        if (description == null || date == null || !isValidDate(date)) {
+            return -1;
+        }
+
+        if (categoryManager == null || !categoryManager.categoryExists(categoryId)) {
+            return -1;
+        }
+
+        Transaction transaction = new Transaction(nextId, description, amount, categoryId, date);
+        transactions.add(transaction);
+        return nextId++;
+    }
+
+    @Override
+    public Transaction[] getAllTransactions() {
+        return transactions.toArray(new Transaction[0]);
+    }
+
+    @Override
+    public Transaction[] getTransactionsByDateRange(String startDate, String endDate) {
+        if (startDate == null || endDate == null ||
+                !isValidDate(startDate) || !isValidDate(endDate)) {
+            return new Transaction[0];
+        }
+
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+
+        if (start.isAfter(end)) {
+            return new Transaction[0];
+        }
+
+        List<Transaction> result = new ArrayList<>();
+
+        for (Transaction t : transactions) {
+            LocalDate transactionDate = LocalDate.parse(t.getDate());
+            if ((transactionDate.isEqual(start) || transactionDate.isAfter(start)) &&
+                    (transactionDate.isEqual(end) || transactionDate.isBefore(end))) {
+                result.add(t);
+            }
+        }
+
+        return result.toArray(new Transaction[0]);
+    }
+
+    @Override
+    public double getTotalIncome() {
+        double total = 0;
+        for (Transaction t : transactions) {
+            if (t.getAmount() > 0) {
+                total += t.getAmount();
+            }
+        }
+        return total;
+    }
+
+    @Override
+    public double getTotalExpense() {
+        double total = 0;
+        for (Transaction t : transactions) {
+            if (t.getAmount() < 0) {
+                total += Math.abs(t.getAmount());
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Metode helper untuk validasi format tanggal
+     */
+    private boolean isValidDate(String dateStr) {
+        try {
+            LocalDate.parse(dateStr);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Memeriksa apakah transaksi dengan ID tertentu ada
+     */
+    private boolean transactionExists(int transactionId) {
+        for (Transaction t : transactions) {
+            if (t.getId() == transactionId) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
