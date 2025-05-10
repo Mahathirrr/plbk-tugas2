@@ -6,9 +6,9 @@ import java.time.LocalDate;
  * Implementasi manajemen transaksi
  * REQUIRED: ICategoryManager (categoryExists)
  */
-public class TransactionManager implements ITransactionManager {
+public class TransactionManager implements ITransactionMgt {
     private ArrayList<Transaction> transactions;
-    private ICategoryManager categoryManager; // REQUIRED INTERFACE
+    private ICategoryMgt categoryManager; // REQUIRED INTERFACE
     private int nextId;
 
     public TransactionManager() {
@@ -19,10 +19,10 @@ public class TransactionManager implements ITransactionManager {
 
     /**
      * Metode untuk koneksi ke komponen CategoryManager
-     * 
+     *
      * @param categoryManager komponen kategori manager
      */
-    public void connectTo(ICategoryManager categoryManager) {
+    public void connectTo(ICategoryMgt categoryManager) {
         this.categoryManager = categoryManager;
     }
 

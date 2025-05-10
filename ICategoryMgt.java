@@ -2,10 +2,10 @@
  * INTERFACE PROVIDED
  * Interface provided untuk manajemen kategori
  */
-public interface ICategoryManager {
+public interface ICategoryMgt {
     /**
      * Menambahkan kategori baru
-     * 
+     *
      * @param name nama kategori
      * @param type tipe kategori ("INCOME" atau "EXPENSE")
      * @return ID kategori jika berhasil, -1 jika gagal
@@ -21,7 +21,7 @@ public interface ICategoryManager {
 
     /**
      * Mendapatkan semua kategori dalam sistem
-     * 
+     *
      * @return array dari semua kategori
      *
      *         post: result != null
@@ -30,7 +30,7 @@ public interface ICategoryManager {
 
     /**
      * Memeriksa apakah kategori dengan ID tertentu ada
-     * 
+     *
      * @param categoryId ID kategori
      * @return true jika kategori ada, false jika tidak
      */
@@ -38,7 +38,7 @@ public interface ICategoryManager {
 
     /**
      * Mendapatkan informasi kategori berdasarkan ID
-     * 
+     *
      * @param categoryId ID kategori
      * @return objek Category jika ditemukan, null jika tidak
      *

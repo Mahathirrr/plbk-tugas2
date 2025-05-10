@@ -2,13 +2,13 @@ import java.util.HashMap;
 
 /**
  * Implementasi manajemen anggaran
- * REQUIRED: ICategoryManager (categoryExists, getCategoryById)
- * REQUIRED: ITransactionManager (getAllTransactions)
+ * REQUIRED: ICategoryMgt (categoryExists, getCategoryById)
+ * REQUIRED: ITransactionMgt (getAllTransactions)
  */
-public class BudgetManager implements IBudgetManager {
+public class BudgetManager implements IBudgetMgt {
     private HashMap<Integer, Budget> budgets;
-    private ICategoryManager categoryManager; // REQUIRED INTERFACE
-    private ITransactionManager transactionManager; // REQUIRED INTERFACE
+    private ICategoryMgt categoryManager; // REQUIRED INTERFACE
+    private ITransactionMgt transactionManager; // REQUIRED INTERFACE
 
     public BudgetManager() {
         this.budgets = new HashMap<>();
@@ -18,19 +18,19 @@ public class BudgetManager implements IBudgetManager {
 
     /**
      * Metode untuk koneksi ke komponen CategoryManager
-     * 
+     *
      * @param categoryManager komponen kategori manager
      */
-    public void connectToCategoryManager(ICategoryManager categoryManager) {
+    public void connectToCategoryManager(ICategoryMgt categoryManager) {
         this.categoryManager = categoryManager;
     }
 
     /**
      * Metode untuk koneksi ke komponen TransactionManager
-     * 
+     *
      * @param transactionManager komponen transaksi manager
      */
-    public void connectToTransactionManager(ITransactionManager transactionManager) {
+    public void connectToTransactionManager(ITransactionMgt transactionManager) {
         this.transactionManager = transactionManager;
     }
 

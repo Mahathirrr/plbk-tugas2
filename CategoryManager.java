@@ -4,7 +4,7 @@ import java.util.ArrayList;
  * Implementasi manajemen kategori
  * REQUIRED: Tidak ada
  */
-public class CategoryManager implements ICategoryManager {
+public class CategoryManager implements ICategoryMgt {
     private ArrayList<Category> categories;
     private int nextId;
 

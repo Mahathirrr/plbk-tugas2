@@ -2,7 +2,7 @@
  * INTERFACE PROVIDED
  * Interface provided untuk manajemen transaksi keuangan
  */
-public interface ITransactionManager {
+public interface ITransactionMgt {
     /**
      * Menambahkan transaksi baru ke sistem
      * @param description deskripsi transaksi

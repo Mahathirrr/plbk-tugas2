@@ -2,10 +2,10 @@
  * INTERFACE PROVIDED
  * Interface provided untuk manajemen anggaran
  */
-public interface IBudgetManager {
+public interface IBudgetMgt {
     /**
      * Menetapkan anggaran untuk kategori tertentu
-     * 
+     *
      * @param categoryId ID kategori
      * @param amount     jumlah anggaran
      * @param period     periode anggaran ("MONTHLY", "WEEKLY", dll)
@@ -13,7 +13,7 @@ public interface IBudgetManager {
      *
      *         pre: amount > 0
      *         pre: period != null
-     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryManager
+     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryMgt
      *
      *         post: result => getBudgetForCategory(categoryId) == amount
      */
@@ -21,11 +21,11 @@ public interface IBudgetManager {
 
     /**
      * Mendapatkan anggaran untuk kategori tertentu
-     * 
+     *
      * @param categoryId ID kategori
      * @return jumlah anggaran, 0 jika tidak ada anggaran
      *
-     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryManager
+     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryMgt
      *
      *         post: result >= 0
      */
@@ -33,11 +33,11 @@ public interface IBudgetManager {
 
     /**
      * Memeriksa persentase penggunaan anggaran
-     * 
+     *
      * @param categoryId ID kategori
      * @return persentase penggunaan (0-100+)
      *
-     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryManager
+     *         pre: categoryExists(categoryId) // REQUIRED dari ICategoryMgt
      *         pre: getBudgetForCategory(categoryId) > 0
      *
      *         post: result >= 0

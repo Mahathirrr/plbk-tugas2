@@ -6,9 +6,9 @@ import java.util.Scanner;
  * Aplikasi utama Personal Finance Tracker
  */
 public class PersonalFinanceTracker {
-    private ICategoryManager categoryManager;
-    private ITransactionManager transactionManager;
-    private IBudgetManager budgetManager;
+    private ICategoryMgt categoryManager;
+    private ITransactionMgt transactionManager;
+    private IBudgetMgt budgetManager;
     private IReportGenerator reportGenerator;
     private Scanner scanner;
 

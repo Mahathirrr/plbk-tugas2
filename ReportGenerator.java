@@ -4,12 +4,12 @@ import java.util.Map;
 
 /**
  * Implementasi generator laporan
- * REQUIRED: ITransactionManager (getTransactionsByDateRange)
- * REQUIRED: ICategoryManager (getCategoryById)
+ * REQUIRED: ITransactionMgt (getTransactionsByDateRange)
+ * REQUIRED: ICategoryMgt (getCategoryById)
  */
 public class ReportGenerator implements IReportGenerator {
-    private ITransactionManager transactionManager; // REQUIRED INTERFACE
-    private ICategoryManager categoryManager; // REQUIRED INTERFACE
+    private ITransactionMgt transactionManager; // REQUIRED INTERFACE
+    private ICategoryMgt categoryManager; // REQUIRED INTERFACE
 
     public ReportGenerator() {
         this.transactionManager = null;
@@ -21,7 +21,7 @@ public class ReportGenerator implements IReportGenerator {
      *
      * @param transactionManager komponen transaksi manager
      */
-    public void connectToTransactionManager(ITransactionManager transactionManager) {
+    public void connectToTransactionManager(ITransactionMgt transactionManager) {
         this.transactionManager = transactionManager;
     }
 
@@ -30,7 +30,7 @@ public class ReportGenerator implements IReportGenerator {
      *
      * @param categoryManager komponen kategori manager
      */
-    public void connectToCategoryManager(ICategoryManager categoryManager) {
+    public void connectToCategoryManager(ICategoryMgt categoryManager) {
         this.categoryManager = categoryManager;
     }
 
